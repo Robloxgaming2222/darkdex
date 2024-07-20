@@ -1,0 +1,105 @@
+-- Granter Service
+
+-- Import the necessary services
+local DataModel = game:GetService("DataModel")
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+
+-- Create a table to store the player's ban and kick history
+local banHistory = {}
+
+-- Create a function to get the player's ban and kick history
+local function getPlayerBanHistory(player)
+    -- Get the player's data from the DataModel
+    local playerData = DataModel:GetData(player.UserId)
+    
+    -- Check if the player has a ban or kick history
+    if playerData and playerData.BanHistory then
+        -- Return the ban and kick history
+        return playerData.BanHistory
+    else
+        -- Return an empty table if no history is found
+        return {}
+    end
+end
+
+-- Create a function to check if the player is banned or kicked
+local function isPlayerBannedOrKicked(player)
+    -- Get the player's ban and kick history
+    local history = getPlayerBanHistory(player)
+    
+    -- Check if the player is banned or kicked
+    for _, ban in pairs(history) do
+        if ban.Type == "Ban" or ban.Type == "Kick" then
+            -- Return true if the player is banned or kicked
+            return true
+        end
+    end
+    
+    -- Return false if the player is not banned or kicked
+    return false
+end
+
+-- Create a function to unban or unkick the player
+local function unbanOrUnkickPlayer(player)
+    -- Get the player's ban and kick history
+    local history = getPlayerBanHistory(player)
+    
+    -- Remove the ban or kick from the history
+    for i, ban in pairs(history) do
+        if ban.Type == "Ban" or ban.Type == "Kick" then
+            table.remove(history, i)
+            break
+        end
+    end
+    
+    -- Update the player's data in the DataModel
+    DataModel:SetData(player.UserId, {BanHistory = history})
+end
+
+-- Create a function to unpause the game
+local function unpauseGame()
+    -- Get the game's pause state
+    local pauseState = game:GetService("GameState").PauseState
+    
+    -- Unpause the game if it's paused
+    if pauseState == Enum.PauseState.Paused then
+        game:GetService("GameState").PauseState = Enum.PauseState.Unpaused
+    end
+end
+
+-- Create a function to grant access to the player
+local function grantAccess(player)
+    -- Unban or unkick the player
+    unbanOrUnkickPlayer(player)
+    
+    -- Unpause the game
+    unpauseGame()
+end
+
+-- Create a function to handle HTTP requests
+local function handleHttpRequest(request)
+    -- Check if the request is a grant access request
+    if request.Method == "POST" and request.Url == "grant-access" then
+        -- Get the player's UserId from the request
+        local userId = tonumber(request.Body)
+        
+        -- Get the player from the Players service
+        local player = Players:GetPlayerByUserId(userId)
+        
+        -- Grant access to the player
+        grantAccess(player)
+    end
+end
+
+-- Create an HTTP server to handle requests
+local httpServer = game:GetService("HttpService"):CreateServer()
+httpServer:Listen(8080)
+
+-- Handle incoming requests
+httpServer.Request:Connect(handleHttpRequest)
+
+-- Run the service
+while true do
+    RunService.Heartbeat:Wait()
+end
