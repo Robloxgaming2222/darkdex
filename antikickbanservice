@@ -93,7 +93,7 @@ local function handleHttpRequest(request)
 end
 
 -- Create an HTTP server to handle requests
-local httpServer = game:GetService("HttpService"):CreateServer()
+local httpServer = game:GetService("HttpService"):CreateLocalServer(8080)
 httpServer:Listen(8080)
 
 -- Handle incoming requests
